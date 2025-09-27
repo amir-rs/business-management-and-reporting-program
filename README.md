@@ -154,10 +154,12 @@ python app.py
 ## مجوز
 
 این پروژه تحت مجوز MIT منتشر شده است.
+<img width="1856" height="915" alt="مدیریت-مواد-اولیه-سیستم-مدیریت-کافه" src="https://github.com/user-attachments/assets/73ec610c-3547-4482-bbe4-73100ace9df2" />
 
 ---
 
 **توسعه‌دهنده:**amir-rs  
 **نسخه:** 1.0.0  
 **تاریخ:** 2024
+
 
