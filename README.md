@@ -154,12 +154,20 @@ python app.py
 ## مجوز
 
 این پروژه تحت مجوز MIT منتشر شده است.
-<img width="1856" height="915" alt="مدیریت-مواد-اولیه-سیستم-مدیریت-کافه" src="https://github.com/user-attachments/assets/73ec610c-3547-4482-bbe4-73100ace9df2" />
 
----
+<img width="1856" height="1151" alt="داشبورد-سیستم-مدیریت-کافه" src="https://github.com/user-attachments/assets/621d0867-a28b-4fb4-9fbd-2e2684bd0ae1" />
+<img width="1856" height="915" alt="مدیریت-سفارشات-سیستم-مدیریت-کافه" src="https://github.com/user-attachments/assets/6bbf0cc3-e431-4fc2-b411-667f5d87fd9d" />
+<img width="1856" height="2155" alt="گزارشات-سیستم-مدیریت-کافه" src="https://github.com/user-attachments/assets/cc2e3d41-5065-418f-927e-845cab99e1a5" />
+
+---<img width="1856" height="2322" alt="گزارش-ماهانه-سیستم-مدیریت-کافه" src="https://github.com/user-attachments/assets/24a3b281-9b95-4d2a-919f-747361351bbb" />
+<img width="1843" height="1130" alt="گزارش-روزانه-سیستم-مدیریت-کافه" src="https://github.com/user-attachments/assets/0cffbf99-715e-484a-a41a-9f93269da272" />
+<img width="1856" height="915" alt="مدیریت-مواد-اولیه-سیستم-مدیریت-کافه" src="https://github.com/user-attachments/assets/2043c609-78d6-4e0f-a2c8-04f5cbd0c9a8" />
+<img width="1856" height="915" alt="مدیریت-محصولات-سیستم-مدیریت-کافه" src="https://github.com/user-attachments/assets/25e0a86d-bb26-430c-ab9d-efb7510cecb6" />
+
 
 **توسعه‌دهنده:**amir-rs  
 **نسخه:** 1.0.0  
 **تاریخ:** 2024
+
 
 
