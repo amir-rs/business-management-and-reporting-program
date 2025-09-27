@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}افزودن هزینه جانبی - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus me-2"></i>افزودن هزینه جانبی جدید
+            </h1>
+            <a href="{{ url_for('overhead') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-2"></i>بازگشت به لیست
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>اطلاعات هزینه جانبی
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">
+                                <i class="fas fa-tag me-1"></i>نام هزینه
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   placeholder="مثال: اجاره محل" required>
+                            <div class="form-text">نام کامل هزینه را وارد کنید</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="amount" class="form-label">
+                                <i class="fas fa-dollar-sign me-1"></i>مبلغ (تومان)
+                            </label>
+                            <input type="number" class="form-control" id="amount" name="amount" 
+                                   step="1000" min="0" placeholder="مثال: 15000000" required>
+                            <div class="form-text">مبلغ هزینه را وارد کنید</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="period" class="form-label">
+                                <i class="fas fa-calendar me-1"></i>دوره زمانی
+                            </label>
+                            <select class="form-select" id="period" name="period" required>
+                                <option value="">انتخاب کنید</option>
+                                <option value="monthly">ماهانه</option>
+                                <option value="daily">روزانه</option>
+                            </select>
+                            <div class="form-text">دوره تکرار این هزینه را انتخاب کنید</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-calculator me-1"></i>محاسبات
+                            </label>
+                            <div class="form-control-plaintext">
+                                <div id="calculationDisplay">
+                                    <span class="text-muted">اطلاعات را وارد کنید</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Impact Analysis -->
+                    <div class="row" id="impactAnalysis" style="display: none;">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-chart-line me-2"></i>تأثیر بر نقطه سر به سر
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>هزینه ماهانه:</strong>
+                                        <span id="monthlyCost">0 تومان</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>تأثیر بر نقطه سر به سر:</strong>
+                                        <span id="breakEvenImpact">0 واحد</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>درصد افزایش:</strong>
+                                        <span id="percentageIncrease">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="button" class="btn btn-outline-secondary me-md-2" 
+                                        onclick="history.back()">
+                                    <i class="fas fa-times me-2"></i>انصراف
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>ذخیره هزینه
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Common Overhead Costs -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>هزینه‌های جانبی رایج
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>هزینه‌های ماهانه:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-building text-primary me-2"></i>اجاره محل</li>
+                            <li><i class="fas fa-users text-primary me-2"></i>حقوق پرسنل</li>
+                            <li><i class="fas fa-bolt text-primary me-2"></i>قبوض آب و برق</li>
+                            <li><i class="fas fa-wifi text-primary me-2"></i>اینترنت و تلفن</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>هزینه‌های روزانه:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-utensils text-success me-2"></i>مواد مصرفی</li>
+                            <li><i class="fas fa-tools text-success me-2"></i>تعمیرات</li>
+                            <li><i class="fas fa-car text-success me-2"></i>حمل و نقل</li>
+                            <li><i class="fas fa-ad text-success me-2"></i>تبلیغات</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('name');
+    const amountInput = document.getElementById('amount');
+    const periodSelect = document.getElementById('period');
+    const impactAnalysis = document.getElementById('impactAnalysis');
+    
+    function updateCalculations() {
+        const name = nameInput.value;
+        const amount = parseFloat(amountInput.value) || 0;
+        const period = periodSelect.value;
+        
+        if (name && amount > 0 && period) {
+            // Calculate monthly equivalent
+            let monthlyCost = amount;
+            if (period === 'daily') {
+                monthlyCost = amount * 30; // Assuming 30 days per month
+            }
+            
+            // Update calculation display
+            document.getElementById('calculationDisplay').innerHTML = `
+                <strong>هزینه ماهانه:</strong> ${monthlyCost.toLocaleString('fa-IR')} تومان
+            `;
+            
+            // Show impact analysis
+            impactAnalysis.style.display = 'block';
+            
+            // Calculate break-even impact (assuming average product price of 25,000 and 40% margin)
+            const avgProductPrice = 25000;
+            const avgMargin = 0.4;
+            const breakEvenImpact = Math.ceil(monthlyCost / (avgProductPrice * avgMargin));
+            
+            document.getElementById('monthlyCost').textContent = 
+                monthlyCost.toLocaleString('fa-IR') + ' تومان';
+            document.getElementById('breakEvenImpact').textContent = 
+                breakEvenImpact.toLocaleString('fa-IR') + ' واحد';
+            
+            // Calculate percentage increase (assuming current break-even of 1000 units)
+            const currentBreakEven = 1000;
+            const percentageIncrease = ((breakEvenImpact / currentBreakEven) * 100).toFixed(1);
+            document.getElementById('percentageIncrease').textContent = percentageIncrease + '%';
+            
+        } else {
+            document.getElementById('calculationDisplay').innerHTML = 
+                '<span class="text-muted">اطلاعات را وارد کنید</span>';
+            impactAnalysis.style.display = 'none';
+        }
+    }
+    
+    // Add event listeners
+    nameInput.addEventListener('input', updateCalculations);
+    amountInput.addEventListener('input', updateCalculations);
+    periodSelect.addEventListener('change', updateCalculations);
+    
+
+    
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const name = nameInput.value.trim();
+        const amount = parseFloat(amountInput.value);
+        const period = periodSelect.value;
+        
+        if (!name) {
+            e.preventDefault();
+            alert('لطفاً نام هزینه را وارد کنید');
+            return;
+        }
+        
+        if (amount <= 0) {
+            e.preventDefault();
+            alert('مبلغ باید بیشتر از صفر باشد');
+            return;
+        }
+        
+        if (!period) {
+            e.preventDefault();
+            alert('لطفاً دوره زمانی را انتخاب کنید');
+            return;
+        }
+        
+        // Confirm large amounts
+        if (amount > 10000000) {
+            if (!confirm(`مبلغ ${amount.toLocaleString('fa-IR')} تومان برای ${name} تأیید می‌کنید؟`)) {
+                e.preventDefault();
+                return;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

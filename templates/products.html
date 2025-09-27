@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}مدیریت محصولات - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-coffee me-2"></i>مدیریت محصولات
+            </h1>
+            <div>
+                <a href="{{ url_for('deleted_products') }}" class="btn btn-outline-warning me-2">
+                    <i class="fas fa-trash me-2"></i>محصولات حذف شده
+                </a>
+                <a href="{{ url_for('add_product') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>افزودن محصول جدید
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>لیست محصولات
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if products %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>نام محصول</th>
+                        <th>قیمت فروش</th>
+                        <th>هزینه مواد</th>
+                        <th>سود خالص</th>
+                        <th>درصد سود</th>
+                        <th>تعداد فروش</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>
+                            <strong>{{ product.name }}</strong>
+                        </td>
+                        <td>{{ "{:,.0f}".format(product.price) }} تومان</td>
+                        <td>
+                            <span id="material-cost-{{ product.id }}">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
+                        </td>
+                        <td>
+                            <span id="profit-{{ product.id }}">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
+                        </td>
+                        <td>
+                            <span id="profit-percent-{{ product.id }}">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">
+                                {{ product.sales|length }} فروش
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        onclick="showProductDetails({{ product.id }})">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success" 
+                                        onclick="showRecipe({{ product.id }})">
+                                    <i class="fas fa-list-ul"></i>
+                                </button>
+                                <a href="{{ url_for('edit_product', id=product.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="deleteProduct({{ product.id }}, '{{ product.name }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-coffee fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">هیچ محصولی ثبت نشده است</h4>
+            <p class="text-muted">برای شروع، محصول جدیدی اضافه کنید</p>
+            <a href="{{ url_for('add_product') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>افزودن محصول
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Product Details Modal -->
+<div class="modal fade" id="productDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">جزئیات محصول</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="productDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recipe Modal -->
+<div class="modal fade" id="recipeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">دستور تهیه محصول</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="recipeContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load cost calculations for each product
+document.addEventListener('DOMContentLoaded', function() {
+    const products = document.querySelectorAll('[id^="material-cost-"]');
+    
+    products.forEach(function(element) {
+        const productId = element.id.split('-')[2];
+        fetch(`/api/calculate_cost/${productId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById(`material-cost-${productId}`).textContent = 
+                    data.material_cost.toLocaleString('fa-IR') + ' تومان';
+                
+                document.getElementById(`profit-${productId}`).textContent = 
+                    data.profit_margin.toLocaleString('fa-IR') + ' تومان';
+                
+                const profitPercent = ((data.profit_margin / data.selling_price) * 100).toFixed(1);
+                document.getElementById(`profit-percent-${productId}`).textContent = 
+                    profitPercent + '%';
+                
+                // Color code the profit percentage
+                const profitElement = document.getElementById(`profit-percent-${productId}`);
+                if (profitPercent > 50) {
+                    profitElement.className = 'text-success fw-bold';
+                } else if (profitPercent > 30) {
+                    profitElement.className = 'text-warning fw-bold';
+                } else {
+                    profitElement.className = 'text-danger fw-bold';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading product costs:', error);
+                element.textContent = 'خطا در محاسبه';
+            });
+    });
+});
+
+// TODO: Implement real product details and recipe functionality
+function showProductDetails(productId) {
+    fetch(`/api/calculate_cost/${productId}`)
+        .then(response => response.json())
+        .then(data => {
+            const content = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>اطلاعات مالی</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>قیمت فروش:</strong> ${data.selling_price.toLocaleString('fa-IR')} تومان</li>
+                            <li><strong>هزینه مواد:</strong> ${data.material_cost.toLocaleString('fa-IR')} تومان</li>
+                            <li><strong>سود خالص:</strong> ${data.profit_margin.toLocaleString('fa-IR')} تومان</li>
+                            <li><strong>درصد سود:</strong> ${((data.profit_margin / data.selling_price) * 100).toFixed(1)}%</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>آمار فروش</h6>
+                        <p>اطلاعات فروش این محصول در حال حاضر در دسترس نیست.</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('productDetailsContent').innerHTML = content;
+            new bootstrap.Modal(document.getElementById('productDetailsModal')).show();
+        })
+        .catch(error => {
+            console.error('Error loading product details:', error);
+            alert('خطا در بارگذاری اطلاعات محصول');
+        });
+}
+
+function showRecipe(productId) {
+    fetch(`/api/recipe_details/${productId}`)
+        .then(response => response.json())
+        .then(data => {
+            let recipeHtml = `<h5>دستور تهیه ${data.product_name}</h5><ul>`;
+            data.recipe.forEach(item => {
+                recipeHtml += `<li><strong>${item.material_name}:</strong> ${item.amount} ${item.unit} (هزینه: ${item.unit_cost.toLocaleString('fa-IR')} تومان)</li>`;
+            });
+            recipeHtml += '</ul>';
+            
+            Swal.fire({
+                title: 'دستور تهیه محصول',
+                html: recipeHtml,
+                icon: 'info',
+                confirmButtonText: 'باشه'
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('خطا', 'خطا در دریافت اطلاعات دستور تهیه', 'error');
+        });
+}
+
+function deleteProduct(productId, productName) {
+    // First check if product has orders
+    fetch(`/api/product_orders_info/${productId}`)
+        .then(response => response.json())
+        .then(data => {
+            let confirmMessage = `آیا از حذف محصول "${productName}" اطمینان دارید؟`;
+            
+            if (data.has_orders) {
+                confirmMessage += `\n\n⚠️ این محصول در ${data.order_count} سفارش قبلی موجود است.\nحذف آن باعث حذف محصول از لیست محصولات فعال می‌شود اما در سفارشات قبلی باقی می‌ماند تا گزارش‌گیری تحت تأثیر قرار نگیرد.`;
+            } else {
+                confirmMessage += `\n\nاین محصول در هیچ سفارشی استفاده نشده است.`;
+            }
+            
+            Swal.fire({
+                title: 'حذف محصول',
+                text: confirmMessage,
+                icon: data.has_orders ? 'warning' : 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'بله، حذف کن',
+                cancelButtonText: 'لغو',
+                html: confirmMessage.replace(/\n/g, '<br>')
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/products/${productId}/delete`;
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error checking product orders:', error);
+            // Fallback to simple confirmation
+            Swal.fire({
+                title: 'حذف محصول',
+                text: `آیا از حذف محصول "${productName}" اطمینان دارید؟`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'بله، حذف کن',
+                cancelButtonText: 'لغو'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/products/${productId}/delete`;
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}محصولات حذف شده - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-trash me-2"></i>محصولات حذف شده
+            </h1>
+            <div>
+                <a href="{{ url_for('products') }}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-arrow-right me-2"></i>بازگشت به محصولات
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>لیست محصولات حذف شده
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if products %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>نام محصول</th>
+                        <th>قیمت فروش</th>
+                        <th>تاریخ حذف</th>
+                        <th>تعداد سفارشات</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>
+                            <strong>{{ product.name }}</strong>
+                        </td>
+                        <td>{{ "{:,.0f}".format(product.price) }} تومان</td>
+                        <td>{{ product.updated_at|jalali_datetime if product.updated_at else 'نامشخص' }}</td>
+                        <td>
+                            <span class="badge bg-info">
+                                {{ product.order_items|length }} سفارش
+                            </span>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-success" 
+                                    onclick="restoreProduct({{ product.id }}, '{{ product.name }}')">
+                                <i class="fas fa-undo"></i> بازیابی
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-trash fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">هیچ محصول حذف شده‌ای وجود ندارد</h4>
+            <p class="text-muted">محصولات حذف شده در اینجا نمایش داده می‌شوند</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function restoreProduct(productId, productName) {
+    Swal.fire({
+        title: 'بازیابی محصول',
+        text: `آیا از بازیابی محصول "${productName}" اطمینان دارید؟`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'بله، بازیابی کن',
+        cancelButtonText: 'لغو'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/products/${productId}/restore`;
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+</script>
+{% endblock %}

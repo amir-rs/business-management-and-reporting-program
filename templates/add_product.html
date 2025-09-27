@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}افزودن محصول - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus me-2"></i>افزودن محصول جدید
+            </h1>
+            <a href="{{ url_for('products') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-2"></i>بازگشت به لیست
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>اطلاعات محصول
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">
+                                <i class="fas fa-tag me-1"></i>نام محصول
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   placeholder="مثال: کاپوچینو" required>
+                            <div class="form-text">نام کامل محصول را وارد کنید</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="price" class="form-label">
+                                <i class="fas fa-dollar-sign me-1"></i>قیمت فروش (تومان)
+                            </label>
+                            <input type="number" class="form-control" id="price" name="price" 
+                                   step="100" min="0" placeholder="مثال: 25000" required>
+                            <div class="form-text">قیمت نهایی فروش محصول</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Raw Materials Selection -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="mb-3">
+                                <i class="fas fa-list-ul me-2"></i>انتخاب مواد اولیه مورد نیاز
+                            </h6>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                برای هر ماده اولیه مورد نیاز، مقدار دقیق را با واحد مورد نظر خود وارد کنید. مواد با مقدار صفر در محصول استفاده نمی‌شوند.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        {% for material in materials %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label for="recipe_{{ material.id }}" class="form-label mb-0">
+                                            <i class="fas fa-box me-1"></i>{{ material.name }}
+                                        </label>
+                                        <small class="text-muted">
+                                            موجودی: {{ "{:,.1f}".format(material.display_stock) }} {{ material.display_unit }}
+                                        </small>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-8">
+                                            <input type="number" class="form-control recipe-input" 
+                                                   id="recipe_{{ material.id }}" 
+                                                   name="recipe_{{ material.id }}" 
+                                                   step="0.01" min="0" 
+                                                   placeholder="مقدار مورد نیاز"
+                                                   data-material-id="{{ material.id }}"
+                                                   data-unit-cost-per-gram="{{ material.unit_cost }}"
+                                                   data-display-unit="{{ material.display_unit }}">
+                                        </div>
+                                        <div class="col-4">
+                                            <select class="form-select recipe-unit-select" 
+                                                    id="unit_{{ material.id }}" 
+                                                    name="unit_{{ material.id }}"
+                                                    data-material-id="{{ material.id }}">
+                                                <option value="gram" {% if material.display_unit == 'gram' %}selected{% endif %}>گرم</option>
+                                                <option value="kg" {% if material.display_unit == 'kg' %}selected{% endif %}>کیلوگرم</option>
+                                                <option value="liter" {% if material.display_unit == 'liter' %}selected{% endif %}>لیتر</option>
+                                                <option value="ml" {% if material.display_unit == 'ml' %}selected{% endif %}>میلی‌لیتر</option>
+                                                <option value="piece" {% if material.display_unit == 'piece' %}selected{% endif %}>عدد</option>
+                                                <option value="pack" {% if material.display_unit == 'pack' %}selected{% endif %}>بسته</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        قیمت واحد: {{ "{:,.0f}".format(material.display_unit_cost) }} تومان
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Cost Calculation Preview -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="alert alert-success">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-calculator me-2"></i>محاسبات هزینه و سود
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <strong>هزینه مواد:</strong>
+                                        <span id="totalMaterialCost">0 تومان</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>قیمت فروش:</strong>
+                                        <span id="sellingPrice">0 تومان</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>سود خالص:</strong>
+                                        <span id="netProfit">0 تومان</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>درصد سود:</strong>
+                                        <span id="profitPercentage">0%</span>
+                                    </div>
+                                </div>
+                                <div class="progress mt-2">
+                                    <div class="progress-bar bg-success" id="profitBar" style="width: 0%">
+                                        <small>سود</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="button" class="btn btn-outline-secondary me-md-2" 
+                                        onclick="history.back()">
+                                    <i class="fas fa-times me-2"></i>انصراف
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>ذخیره محصول
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Unit conversion factors (same as backend)
+const conversionFactors = {
+    'gram': 1,
+    'kg': 1000,
+    'liter': 1000,
+    'ml': 1,
+    'piece': 1,
+    'pack': 100
+};
+
+function convertToGrams(amount, unit) {
+    return amount * conversionFactors[unit] || 1;
+}
+
+// Real-time cost calculation
+document.addEventListener('DOMContentLoaded', function() {
+    const recipeInputs = document.querySelectorAll('.recipe-input');
+    const recipeUnitSelects = document.querySelectorAll('.recipe-unit-select');
+    const priceInput = document.getElementById('price');
+    
+    function updateCalculations() {
+        let totalMaterialCost = 0;
+        const sellingPrice = parseFloat(priceInput.value) || 0;
+        
+        // Calculate total material cost
+        recipeInputs.forEach(function(input) {
+            const amount = parseFloat(input.value) || 0;
+            const unitCostPerGram = parseFloat(input.dataset.unitCostPerGram) || 0;
+            const materialId = input.dataset.materialId;
+            const unitSelect = document.getElementById(`unit_${materialId}`);
+            const selectedUnit = unitSelect.value;
+            
+            // Convert amount to grams and calculate cost
+            const amountInGrams = convertToGrams(amount, selectedUnit);
+            const materialCost = amountInGrams * unitCostPerGram;
+            totalMaterialCost += materialCost;
+        });
+        
+        // Update display
+        document.getElementById('totalMaterialCost').textContent = 
+            totalMaterialCost.toLocaleString('fa-IR') + ' تومان';
+        document.getElementById('sellingPrice').textContent = 
+            sellingPrice.toLocaleString('fa-IR') + ' تومان';
+        
+        // Calculate profit
+        const netProfit = sellingPrice - totalMaterialCost;
+        document.getElementById('netProfit').textContent = 
+            netProfit.toLocaleString('fa-IR') + ' تومان';
+        
+        // Calculate profit percentage
+        const profitPercentage = sellingPrice > 0 ? (netProfit / sellingPrice) * 100 : 0;
+        document.getElementById('profitPercentage').textContent = 
+            profitPercentage.toFixed(1) + '%';
+        
+        // Update progress bar
+        const profitBar = document.getElementById('profitBar');
+        const profitWidth = Math.max(0, Math.min(100, profitPercentage));
+        profitBar.style.width = profitWidth + '%';
+        
+        // Color code the profit
+        if (profitPercentage > 50) {
+            profitBar.className = 'progress-bar bg-success';
+        } else if (profitPercentage > 30) {
+            profitBar.className = 'progress-bar bg-warning';
+        } else if (profitPercentage > 0) {
+            profitBar.className = 'progress-bar bg-info';
+        } else {
+            profitBar.className = 'progress-bar bg-danger';
+        }
+    }
+    
+    // Add event listeners
+    recipeInputs.forEach(function(input) {
+        input.addEventListener('input', updateCalculations);
+    });
+    
+    recipeUnitSelects.forEach(function(select) {
+        select.addEventListener('change', updateCalculations);
+    });
+    
+    priceInput.addEventListener('input', updateCalculations);
+    
+    // Initial calculation
+    updateCalculations();
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const price = parseFloat(document.getElementById('price').value);
+    const recipeInputs = document.querySelectorAll('.recipe-input');
+    let hasIngredients = false;
+    let totalMaterialCost = 0;
+    
+    recipeInputs.forEach(function(input) {
+        const amount = parseFloat(input.value) || 0;
+        const unitCostPerGram = parseFloat(input.dataset.unitCostPerGram) || 0;
+        const materialId = input.dataset.materialId;
+        const unitSelect = document.getElementById(`unit_${materialId}`);
+        const selectedUnit = unitSelect.value;
+        
+        const amountInGrams = convertToGrams(amount, selectedUnit);
+        const materialCost = amountInGrams * unitCostPerGram;
+        totalMaterialCost += materialCost;
+        
+        if (amount > 0) hasIngredients = true;
+    });
+    
+    if (!hasIngredients) {
+        e.preventDefault();
+        alert('حداقل یک ماده اولیه باید انتخاب شود');
+        return;
+    }
+    
+    if (price <= 0) {
+        e.preventDefault();
+        alert('قیمت فروش باید بیشتر از صفر باشد');
+        return;
+    }
+    
+    if (price <= totalMaterialCost) {
+        e.preventDefault();
+        alert('قیمت فروش باید بیشتر از هزینه مواد باشد');
+        return;
+    }
+    
+    const profitPercentage = ((price - totalMaterialCost) / price) * 100;
+    if (profitPercentage < 10) {
+        if (!confirm('درصد سود کمتر از 10% است. آیا مطمئن هستید که می‌خواهید ادامه دهید؟')) {
+            e.preventDefault();
+            return;
+        }
+    }
+});
+</script>
+{% endblock %}

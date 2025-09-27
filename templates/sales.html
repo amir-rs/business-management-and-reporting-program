@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}مدیریت فروش - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-shopping-cart me-2"></i>مدیریت فروش
+            </h1>
+            <a href="{{ url_for('add_sale') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>ثبت فروش جدید
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>لیست فروش‌ها
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if sales %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>تاریخ و ساعت</th>
+                        <th>محصول</th>
+                        <th>تعداد</th>
+                        <th>قیمت واحد</th>
+                        <th>قیمت کل</th>
+                        <th>هزینه مواد</th>
+                        <th>سود</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in sales %}
+                    <tr>
+                        <td>
+                            <small>{{ sale.date|jalali_datetime }}</small>
+                        </td>
+                        <td>
+                            <strong>{{ sale.product.name }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">{{ sale.quantity }}</span>
+                        </td>
+                        <td>{{ "{:,.0f}".format(sale.product.price) }} تومان</td>
+                        <td>{{ "{:,.0f}".format(sale.total_price) }} تومان</td>
+                        <td>
+                            <span id="material-cost-sale-{{ sale.id }}">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
+                        </td>
+                        <td>
+                            <span id="profit-sale-{{ sale.id }}">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                    onclick="showSaleDetails({{ sale.id }})">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">هیچ فروشی ثبت نشده است</h4>
+            <p class="text-muted">برای شروع، فروش جدیدی ثبت کنید</p>
+            <a href="{{ url_for('add_sale') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>ثبت فروش جدید
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Sales Summary Cards -->
+{% if sales %}
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-shopping-cart fa-2x mb-2"></i>
+                <h5>{{ sales|length }}</h5>
+                <p class="mb-0">کل فروش‌ها</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+                <h5>{{ "{:,.0f}".format(sales|sum(attribute='total_price')) }} تومان</h5>
+                <p class="mb-0">کل درآمد</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-coffee fa-2x mb-2"></i>
+                <h5>{{ sales|sum(attribute='quantity') }}</h5>
+                <p class="mb-0">کل محصولات فروخته شده</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-2x mb-2"></i>
+                <h5 id="totalProfit">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </h5>
+                <p class="mb-0">کل سود</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Chart -->
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>نمودار فروش هفتگی
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="weeklySalesChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>توزیع فروش بر اساس محصول
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="productSalesChart" width="300" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Sale Details Modal -->
+<div class="modal fade" id="saleDetailsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">جزئیات فروش</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="saleDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load cost calculations for each sale
+// Charts will be populated with real data when available
+{% if sales %}
+// TODO: Implement real data charts based on actual sales data
+{% endif %}
+</script>
+{% endblock %}

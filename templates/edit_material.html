@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}ویرایش ماده اولیه - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-edit me-2"></i>ویرایش ماده اولیه
+            </h1>
+            <a href="{{ url_for('materials') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-2"></i>بازگشت به لیست
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>اطلاعات ماده اولیه
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">
+                                <i class="fas fa-tag me-1"></i>نام ماده
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ material.name }}" required>
+                            <div class="form-text">نام کامل ماده اولیه را وارد کنید</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="unit" class="form-label">
+                                <i class="fas fa-ruler me-1"></i>واحد اندازه‌گیری
+                            </label>
+                            <select class="form-select" id="unit" name="unit" required>
+                                <option value="gram" {{ 'selected' if material.display_unit == 'gram' }}>گرم</option>
+                                <option value="kg" {{ 'selected' if material.display_unit == 'kg' }}>کیلوگرم</option>
+                                <option value="liter" {{ 'selected' if material.display_unit == 'liter' }}>لیتر</option>
+                                <option value="ml" {{ 'selected' if material.display_unit == 'ml' }}>میلی‌لیتر</option>
+                                <option value="piece" {{ 'selected' if material.display_unit == 'piece' }}>عدد</option>
+                                <option value="pack" {{ 'selected' if material.display_unit == 'pack' }}>بسته</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="current_stock" class="form-label">
+                                <i class="fas fa-boxes me-1"></i>موجودی فعلی
+                            </label>
+                            <input type="number" class="form-control" id="current_stock" 
+                                   name="current_stock" step="0.01" min="0" 
+                                   value="{{ "{:.1f}".format(material.display_stock) }}" required>
+                            <div class="form-text">مقدار موجودی فعلی را وارد کنید</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="unit_cost" class="form-label">
+                                <i class="fas fa-dollar-sign me-1"></i>قیمت واحد (تومان)
+                            </label>
+                            <input type="number" class="form-control" id="unit_cost" 
+                                   name="unit_cost" step="0.01" min="0" 
+                                   value="{{ "{:.0f}".format(material.display_unit_cost) }}" required>
+                            <div class="form-text">قیمت هر واحد از ماده</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cost Calculation Preview -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-calculator me-2"></i>پیش‌نمایش محاسبات
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>ارزش کل موجودی:</strong>
+                                        <span id="totalValue">{{ "{:,.0f}".format(material.total_value) }} تومان</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>هزینه هر واحد:</strong>
+                                        <span id="costPerUnit">{{ "{:,.0f}".format(material.display_unit_cost) }} تومان</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>وضعیت موجودی:</strong>
+                                        <span id="stockStatus" class="badge bg-{{ 'success' if material.display_stock > 1000 else 'warning' if material.display_stock > 500 else 'danger' }}">
+                                            {{ 'کافی' if material.display_stock > 1000 else 'متوسط' if material.display_stock > 500 else 'کم' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="button" class="btn btn-outline-secondary me-md-2" 
+                                        onclick="history.back()">
+                                    <i class="fas fa-times me-2"></i>انصراف
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>ذخیره تغییرات
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Real-time calculation updates
+document.addEventListener('DOMContentLoaded', function() {
+    const stockInput = document.getElementById('current_stock');
+    const costInput = document.getElementById('unit_cost');
+    const unitSelect = document.getElementById('unit');
+    
+    function updateCalculations() {
+        const stock = parseFloat(stockInput.value) || 0;
+        const cost = parseFloat(costInput.value) || 0;
+        const unit = unitSelect.value;
+        
+        // Update total value
+        const totalValue = stock * cost;
+        document.getElementById('totalValue').textContent = 
+            totalValue.toLocaleString('fa-IR') + ' تومان';
+        
+        // Update cost per unit
+        document.getElementById('costPerUnit').textContent = 
+            cost.toLocaleString('fa-IR') + ' تومان';
+        
+        // Update stock status based on unit
+        const statusElement = document.getElementById('stockStatus');
+        let threshold = 1000; // Default threshold for grams
+        
+        // Adjust threshold based on unit
+        if (unit === 'kg') {
+            threshold = 1; // 1 kg threshold
+        } else if (unit === 'liter') {
+            threshold = 1; // 1 liter threshold
+        } else if (unit === 'ml') {
+            threshold = 1000; // 1000 ml threshold
+        } else if (unit === 'piece') {
+            threshold = 100; // 100 pieces threshold
+        } else if (unit === 'pack') {
+            threshold = 10; // 10 packs threshold
+        }
+        
+        if (stock > threshold) {
+            statusElement.textContent = 'کافی';
+            statusElement.className = 'badge bg-success';
+        } else if (stock > threshold / 2) {
+            statusElement.textContent = 'متوسط';
+            statusElement.className = 'badge bg-warning text-dark';
+        } else if (stock > 0) {
+            statusElement.textContent = 'کم';
+            statusElement.className = 'badge bg-danger';
+        } else {
+            statusElement.textContent = 'نامشخص';
+            statusElement.className = 'badge bg-secondary';
+        }
+    }
+    
+    // Add event listeners
+    stockInput.addEventListener('input', updateCalculations);
+    costInput.addEventListener('input', updateCalculations);
+    unitSelect.addEventListener('change', updateCalculations);
+    
+    // Initial calculation
+    updateCalculations();
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const stock = parseFloat(document.getElementById('current_stock').value);
+    const cost = parseFloat(document.getElementById('unit_cost').value);
+    
+    if (stock < 0) {
+        e.preventDefault();
+        alert('موجودی نمی‌تواند منفی باشد');
+        return;
+    }
+    
+    if (cost < 0) {
+        e.preventDefault();
+        alert('قیمت نمی‌تواند منفی باشد');
+        return;
+    }
+    
+    if (stock === 0 && cost === 0) {
+        e.preventDefault();
+        alert('لطفاً حداقل یکی از مقادیر موجودی یا قیمت را وارد کنید');
+        return;
+    }
+});
+</script>
+{% endblock %}

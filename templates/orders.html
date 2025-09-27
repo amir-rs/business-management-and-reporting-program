@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}مدیریت سفارشات - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-shopping-cart me-2"></i>مدیریت سفارشات
+            </h1>
+            <a href="{{ url_for('add_order') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>ثبت سفارش جدید
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>لیست سفارشات
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>شماره فاکتور</th>
+                        <th>مشتری</th>
+                        <th>تلفن</th>
+                        <th>مبلغ کل</th>
+                        <th>وضعیت</th>
+                        <th>پرداخت</th>
+                        <th>تاریخ</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>
+                            <strong>{{ order.invoice_number }}</strong>
+                        </td>
+                        <td>
+                            {% if order.customer_name %}
+                                {{ order.customer_name }}
+                            {% else %}
+                                <span class="text-muted">بدون نام</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if order.customer_phone %}
+                                {{ order.customer_phone }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ "{:,.0f}".format(order.total_amount) }} تومان</td>
+                        <td>
+                            {% if order.status == 'preparing' %}
+                                <span class="badge bg-warning">در حال آماده‌سازی</span>
+                            {% elif order.status == 'delivered' %}
+                                <span class="badge bg-success">تحویل داده شد</span>
+                            {% elif order.status == 'cancelled' %}
+                                <span class="badge bg-danger">لغو شده</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if order.payment_method == 'cash' %}
+                                <span class="badge bg-secondary">نقدی</span>
+                            {% elif order.payment_method == 'card' %}
+                                <span class="badge bg-info text-dark">کارتی</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ order.created_at|jalali_datetime }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('view_invoice', order_id=order.id) }}" 
+                                   class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('print_invoice', order_id=order.id) }}" 
+                                   class="btn btn-sm btn-outline-secondary" target="_blank">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                                {% if order.status == 'preparing' %}
+                                <button type="button" class="btn btn-sm btn-outline-success"
+                                        onclick="updateStatus({{ order.id }}, 'delivered')">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        onclick="updateStatus({{ order.id }}, 'cancelled')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">هیچ سفارشی ثبت نشده است</h4>
+            <p class="text-muted">برای شروع، سفارش جدیدی ثبت کنید</p>
+            <a href="{{ url_for('add_order') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>ثبت سفارش
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateStatus(orderId, status) {
+    const statusNames = {
+        'delivered': 'تحویل داده شد',
+        'cancelled': 'لغو شده'
+    };
+    
+    if (confirm(`آیا مطمئن هستید که می‌خواهید وضعیت سفارش را به "${statusNames[status]}" تغییر دهید؟`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/orders/${orderId}/status`;
+        
+        const statusInput = document.createElement('input');
+        statusInput.type = 'hidden';
+        statusInput.name = 'status';
+        statusInput.value = status;
+        
+        form.appendChild(statusInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

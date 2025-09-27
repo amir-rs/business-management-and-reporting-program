@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}مدیریت مواد اولیه - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-boxes me-2"></i>مدیریت مواد اولیه
+            </h1>
+            <a href="{{ url_for('add_material') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>افزودن ماده جدید
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>لیست مواد اولیه
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if materials %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>نام ماده</th>
+                        <th>موجودی فعلی</th>
+                        <th>قیمت واحد</th>
+                        <th>واحد</th>
+                        <th>ارزش کل موجودی</th>
+                        <th>وضعیت</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for material in materials %}
+                    <tr>
+                        <td>
+                            <strong>{{ material.name }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if material.display_stock > 1000 else 'warning' if material.display_stock > 500 else 'danger' }}">
+                                {{ "{:,.1f}".format(material.display_stock) }} {{ material.display_unit }}
+                            </span>
+                        </td>
+                        <td>{{ "{:,.0f}".format(material.display_unit_cost) }} تومان</td>
+                        <td>{{ material.display_unit }}</td>
+                        <td>{{ "{:,.0f}".format(material.total_value) }} تومان</td>
+                        <td>
+                            {% if material.display_stock > 1000 %}
+                                <span class="badge bg-success">کافی</span>
+                            {% elif material.display_stock > 500 %}
+                                <span class="badge bg-warning text-dark">متوسط</span>
+                            {% else %}
+                                <span class="badge bg-danger">کم</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('edit_material', id=material.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        onclick="showMaterialDetails({{ material.id }})">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">هیچ ماده اولیه‌ای ثبت نشده است</h4>
+            <p class="text-muted">برای شروع، ماده اولیه جدیدی اضافه کنید</p>
+            <a href="{{ url_for('add_material') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>افزودن ماده اولیه
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary Cards -->
+{% if materials %}
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-boxes fa-2x mb-2"></i>
+                <h5>{{ materials|length }}</h5>
+                <p class="mb-0">کل مواد</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+                <h5>{{ "{:,.0f}".format(total_inventory_value) }} تومان</h5>
+                <p class="mb-0">ارزش کل موجودی</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card-warning">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <h5>{{ materials|selectattr('display_stock', '<', 1000)|list|length }}</h5>
+                <p class="mb-0">مواد کم موجودی</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card-danger">
+            <div class="card-body text-center">
+                <i class="fas fa-times-circle fa-2x mb-2"></i>
+                <h5>{{ materials|selectattr('display_stock', '<', 500)|list|length }}</h5>
+                <p class="mb-0">مواد بحرانی</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Material Details Modal -->
+<div class="modal fade" id="materialDetailsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">جزئیات ماده اولیه</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="materialDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// TODO: Implement real material details functionality
+</script>
+{% endblock %}

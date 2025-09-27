@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block title %}گزارشات - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-bar me-2"></i>گزارشات مدیریتی
+        </h1>
+    </div>
+</div>
+
+<!-- Report Types -->
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-day me-2"></i>گزارش روزانه
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">گزارش کامل فروش و مصرف مواد اولیه در یک روز مشخص</p>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success me-2"></i>فروش روزانه</li>
+                    <li><i class="fas fa-check text-success me-2"></i>مصرف مواد اولیه</li>
+                    <li><i class="fas fa-check text-success me-2"></i>محصولات پرفروش</li>
+                    <li><i class="fas fa-check text-success me-2"></i>سود روزانه</li>
+                </ul>
+                <a href="{{ url_for('daily_report') }}" class="btn btn-primary w-100">
+                    <i class="fas fa-eye me-2"></i>مشاهده گزارش روزانه
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i>گزارش ماهانه
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">گزارش جامع عملکرد ماهانه کافه با تحلیل مالی کامل</p>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success me-2"></i>فروش ماهانه</li>
+                    <li><i class="fas fa-check text-success me-2"></i>هزینه‌های عملیاتی</li>
+                    <li><i class="fas fa-check text-success me-2"></i>سود و زیان</li>
+                    <li><i class="fas fa-check text-success me-2"></i>تحلیل نقطه سر به سر</li>
+                </ul>
+                <a href="{{ url_for('monthly_report') }}" class="btn btn-primary w-100">
+                    <i class="fas fa-eye me-2"></i>مشاهده گزارش ماهانه
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>تحلیل نقطه سر به سر
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">تحلیل دقیق نقطه سر به سر و سودآوری کافه</p>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success me-2"></i>نقطه سر به سر</li>
+                    <li><i class="fas fa-check text-success me-2"></i>هزینه‌های ثابت</li>
+                    <li><i class="fas fa-check text-success me-2"></i>حاشیه سود</li>
+                    <li><i class="fas fa-check text-success me-2"></i>پیش‌بینی سود</li>
+                </ul>
+                <button type="button" class="btn btn-primary w-100" onclick="showBreakEvenAnalysis()">
+                    <i class="fas fa-calculator me-2"></i>محاسبه نقطه سر به سر
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Statistics -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tachometer-alt me-2"></i>آمار سریع
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div class="border-end">
+                            <h3 class="text-primary" id="todaySales">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </h3>
+                            <p class="text-muted">فروش امروز (تومان)</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border-end">
+                            <h3 class="text-success" id="monthSales">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </h3>
+                            <p class="text-muted">فروش ماه جاری (تومان)</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border-end">
+                            <h3 class="text-warning" id="avgDailySales">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </h3>
+                            <p class="text-muted">میانگین فروش روزانه (تومان)</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h3 class="text-info" id="profitMargin">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </h3>
+                        <p class="text-muted">درصد سود متوسط</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-area me-2"></i>روند فروش هفتگی
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="weeklyTrendChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>توزیع هزینه‌ها
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="costDistributionChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Break-even Analysis Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>تحلیل نقطه سر به سر
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="breakEvenContent">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                        <p class="mt-2 text-muted">در حال محاسبه...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Break-even Analysis Modal -->
+<div class="modal fade" id="breakEvenModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تحلیل نقطه سر به سر</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="breakEvenContent">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                    <p>در حال محاسبه...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load real statistics
+    loadQuickStats();
+    createWeeklyTrendChart();
+    createCostDistributionChart();
+    loadBreakEvenAnalysis();
+});
+
+// Load real quick statistics
+function loadQuickStats() {
+    fetch('/api/quick_stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('todaySales').textContent = data.today_sales.toLocaleString('fa-IR');
+            document.getElementById('monthSales').textContent = data.month_sales.toLocaleString('fa-IR');
+            document.getElementById('avgDailySales').textContent = data.avg_daily_sales.toLocaleString('fa-IR');
+            document.getElementById('profitMargin').textContent = data.profit_margin.toFixed(1) + '%';
+        })
+        .catch(error => {
+            console.error('Error loading quick stats:', error);
+            // Fallback to loading indicators
+            document.getElementById('todaySales').innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i>';
+            document.getElementById('monthSales').innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i>';
+            document.getElementById('avgDailySales').innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i>';
+            document.getElementById('profitMargin').innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i>';
+        });
+}
+
+function createWeeklyTrendChart() {
+    const ctx = document.getElementById('weeklyTrendChart').getContext('2d');
+    
+    // Fetch real weekly data
+    fetch('/api/weekly_sales_data')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'فروش هفتگی (هزار تومان)',
+                        data: data.data,
+                        borderColor: 'rgba(139, 69, 19, 1)',
+                        backgroundColor: 'rgba(139, 69, 19, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'فروش (هزار تومان)'
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading weekly data:', error);
+            // Fallback to empty chart
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['هفته 1', 'هفته 2', 'هفته 3', 'هفته 4'],
+                    datasets: [{
+                        label: 'فروش هفتگی (هزار تومان)',
+                        data: [0, 0, 0, 0],
+                        borderColor: 'rgba(139, 69, 19, 1)',
+                        backgroundColor: 'rgba(139, 69, 19, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+}
+
+function createCostDistributionChart() {
+    const ctx = document.getElementById('costDistributionChart').getContext('2d');
+    
+    // Fetch real cost data
+    fetch('/api/cost_distribution_data')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.data,
+                        backgroundColor: [
+                            'rgba(40, 167, 69, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(23, 162, 184, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading cost data:', error);
+            // Fallback to empty chart
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['سود خالص', 'هزینه مواد اولیه', 'هزینه‌های عملیاتی'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: [
+                            'rgba(40, 167, 69, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(23, 162, 184, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        });
+}
+
+// TODO: Implement real break-even analysis functionality
+function loadBreakEvenAnalysis() {
+    fetch('/api/break_even_analysis')
+        .then(response => response.json())
+        .then(data => {
+            const content = `
+                <div class="row">
+                    <div class="col-6">
+                        <h6 class="text-muted">هزینه‌های ماهانه</h6>
+                        <h4 class="text-danger">${data.monthly_overhead.toLocaleString('fa-IR')} تومان</h4>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-muted">سود متوسط هر سفارش</h6>
+                        <h4 class="text-success">${data.average_profit_per_order.toLocaleString('fa-IR')} تومان</h4>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-6">
+                        <h6 class="text-muted">نقطه سر به سر (تعداد سفارش)</h6>
+                        <h3 class="text-primary">${Math.ceil(data.break_even_orders)}</h3>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-muted">درآمد مورد نیاز</h6>
+                        <h4 class="text-warning">${data.break_even_revenue.toLocaleString('fa-IR')} تومان</h4>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        برای رسیدن به نقطه سر به سر، باید ${Math.ceil(data.break_even_orders)} سفارش در ماه داشته باشید.
+                    </div>
+                </div>
+            `;
+            document.getElementById('breakEvenContent').innerHTML = content;
+        })
+        .catch(error => {
+            console.error('Error loading break-even analysis:', error);
+            document.getElementById('breakEvenContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    خطا در بارگذاری تحلیل نقطه سر به سر
+                </div>
+            `;
+        });
+}
+</script>
+{% endblock %}

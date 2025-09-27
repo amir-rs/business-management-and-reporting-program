@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}ثبت سفارش جدید - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-shopping-cart me-2"></i>ثبت سفارش جدید
+            </h1>
+            <div>
+                <a href="{{ url_for('orders') }}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-arrow-right me-2"></i>بازگشت به سفارشات
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Order Form -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>اطلاعات سفارش
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="orderForm">
+                    <!-- Customer Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="customer_name" class="form-label fw-bold">
+                                <i class="fas fa-user me-2"></i>نام مشتری
+                            </label>
+                            <input type="text" class="form-control form-control-lg" 
+                                   id="customer_name" name="customer_name"
+                                   placeholder="نام مشتری (اختیاری)">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="customer_phone" class="form-label fw-bold">
+                                <i class="fas fa-phone me-2"></i>شماره تماس
+                            </label>
+                            <input type="tel" class="form-control form-control-lg" 
+                                   id="customer_phone" name="customer_phone"
+                                   placeholder="شماره تماس (اختیاری)">
+                        </div>
+                    </div>
+
+                    <!-- Product Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-coffee me-2"></i>انتخاب محصولات
+                        </label>
+                        <div id="productItems">
+                            <div class="product-item card border-primary mb-3">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">محصول</label>
+                                            <select class="form-select form-select-lg product-select" 
+                                                    name="product_0" required onchange="updateProductInfo(this, 0)">
+                                                <option value="">انتخاب محصول</option>
+                                                {% for product in products %}
+                                                <option value="{{ product.id }}" 
+                                                        data-price="{{ product.price }}"
+                                                        data-name="{{ product.name }}">
+                                                    {{ product.name }} - {{ "{:,.0f}".format(product.price) }} تومان
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold">تعداد</label>
+                                            <input type="number" class="form-control form-control-lg quantity-input" 
+                                                   name="quantity_0" min="1" value="1" required
+                                                   onchange="updateOrderSummary()">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label fw-bold">قیمت واحد</label>
+                                            <div class="form-control-plaintext fw-bold text-primary unit-price" id="unitPrice_0">
+                                                -
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-md-6">
+                                            <small class="text-muted product-name" id="productName_0">-</small>
+                                        </div>
+                                        <div class="col-md-6 text-end">
+                                            <span class="badge bg-info total-price" id="totalPrice_0">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="button" class="btn btn-outline-primary btn-lg" onclick="addProductItem()">
+                                <i class="fas fa-plus me-2"></i>افزودن محصول دیگر
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold d-block mb-2">
+                            <i class="fas fa-credit-card me-2"></i>نوع پرداخت
+                        </label>
+                        <div class="btn-group w-100" role="group" aria-label="Payment Method">
+                            <input type="radio" class="btn-check" name="payment_method" id="pm_card" value="card" autocomplete="off" checked>
+                            <label class="btn btn-outline-primary" for="pm_card">
+                                <i class="fas fa-credit-card me-1"></i> کارتی
+                            </label>
+
+                            <input type="radio" class="btn-check" name="payment_method" id="pm_cash" value="cash" autocomplete="off">
+                            <label class="btn btn-outline-secondary" for="pm_cash">
+                                <i class="fas fa-money-bill-wave me-1"></i> نقدی
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-success btn-lg px-5" id="submitBtn">
+                            <i class="fas fa-check me-2"></i>ثبت سفارش
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Summary -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm sticky-top" style="top: 20px;">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-calculator me-2"></i>خلاصه سفارش
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <span class="fw-bold">تعداد محصولات:</span>
+                    </div>
+                    <div class="col-6 text-end">
+                        <span class="badge bg-primary fs-6" id="totalItems">0</span>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <span class="fw-bold">مبلغ کل:</span>
+                    </div>
+                    <div class="col-6 text-end">
+                        <span class="fw-bold text-success fs-5" id="totalAmount">0 تومان</span>
+                    </div>
+                </div>
+
+                <hr>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <small>
+                        نام مشتری و شماره تماس اختیاری هستند. در صورت عدم ورود، مقادیر پیش‌فرض استفاده می‌شود.
+                        پس از ثبت سفارش، شماره فاکتور به شما داده خواهد شد و موجودی مواد اولیه به‌روزرسانی می‌شود.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let productCounter = 1;
+
+function addProductItem() {
+    const productItems = document.getElementById('productItems');
+    const newItem = document.createElement('div');
+    newItem.className = 'product-item card border-primary mb-3';
+    newItem.innerHTML = `
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">محصول</label>
+                    <select class="form-select form-select-lg product-select" 
+                            name="product_${productCounter}" required onchange="updateProductInfo(this, ${productCounter})">
+                        <option value="">انتخاب محصول</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}" 
+                                data-price="{{ product.price }}"
+                                data-name="{{ product.name }}">
+                            {{ product.name }} - {{ "{:,.0f}".format(product.price) }} تومان
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">تعداد</label>
+                    <input type="number" class="form-control form-control-lg quantity-input" 
+                           name="quantity_${productCounter}" min="1" value="1" required
+                           onchange="updateOrderSummary()">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">قیمت واحد</label>
+                    <div class="form-control-plaintext fw-bold text-primary unit-price" id="unitPrice_${productCounter}">
+                        -
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-6">
+                    <small class="text-muted product-name" id="productName_${productCounter}">-</small>
+                </div>
+                <div class="col-md-6 text-end">
+                    <span class="badge bg-info total-price" id="totalPrice_${productCounter}">-</span>
+                </div>
+            </div>
+            <div class="text-end mt-2">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeProductItem(this)">
+                    <i class="fas fa-trash me-1"></i>حذف
+                </button>
+            </div>
+        </div>
+    `;
+    
+    productItems.appendChild(newItem);
+    productCounter++;
+}
+
+function removeProductItem(button) {
+    button.closest('.product-item').remove();
+    updateOrderSummary();
+}
+
+function updateProductInfo(select, index) {
+    const selectedOption = select.options[select.selectedIndex];
+    const unitPriceElement = document.getElementById(`unitPrice_${index}`);
+    const productNameElement = document.getElementById(`productName_${index}`);
+    const totalPriceElement = document.getElementById(`totalPrice_${index}`);
+    
+    if (selectedOption.value) {
+        const price = parseFloat(selectedOption.dataset.price);
+        const name = selectedOption.dataset.name;
+        const quantity = parseInt(document.querySelector(`input[name="quantity_${index}"]`).value) || 1;
+        
+        unitPriceElement.textContent = `${price.toLocaleString()} تومان`;
+        productNameElement.textContent = name;
+        totalPriceElement.textContent = `${(price * quantity).toLocaleString()} تومان`;
+    } else {
+        unitPriceElement.textContent = '-';
+        productNameElement.textContent = '-';
+        totalPriceElement.textContent = '-';
+    }
+    
+    updateOrderSummary();
+}
+
+function updateOrderSummary() {
+    let totalItems = 0;
+    let totalAmount = 0;
+    
+    // Get all product selects
+    const productSelects = document.querySelectorAll('.product-select');
+    
+    productSelects.forEach((select, index) => {
+        if (select.value) {
+            const quantity = parseInt(document.querySelector(`input[name="quantity_${index}"]`).value) || 1;
+            const price = parseFloat(select.options[select.selectedIndex].dataset.price);
+            
+            totalItems += quantity;
+            totalAmount += (price * quantity);
+        }
+    });
+    
+    // Update summary display
+    document.getElementById('totalItems').textContent = totalItems;
+    document.getElementById('totalAmount').textContent = `${totalAmount.toLocaleString()} تومان`;
+    
+    // Enable/disable submit button
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = totalItems === 0;
+    
+    if (totalItems === 0) {
+        submitBtn.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>ابتدا محصولی انتخاب کنید';
+        submitBtn.className = 'btn btn-warning btn-lg px-5';
+    } else {
+        submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>ثبت سفارش';
+        submitBtn.className = 'btn btn-success btn-lg px-5';
+    }
+}
+
+// Initialize first product item
+document.addEventListener('DOMContentLoaded', function() {
+    updateProductInfo(document.querySelector('.product-select'), 0);
+    updateOrderSummary();
+});
+
+// Add event listeners for quantity changes
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('quantity-input')) {
+        const index = e.target.name.split('_')[1];
+        updateProductInfo(document.querySelector(`select[name="product_${index}"]`), index);
+        updateOrderSummary();
+    }
+});
+</script>
+{% endblock %}

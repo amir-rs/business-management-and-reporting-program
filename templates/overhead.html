@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}مدیریت هزینه‌های جانبی - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-dollar-sign me-2"></i>مدیریت هزینه‌های جانبی
+            </h1>
+            <a href="{{ url_for('add_overhead') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>افزودن هزینه جدید
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>لیست هزینه‌های جانبی
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if overhead_costs %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>نام هزینه</th>
+                        <th>مبلغ</th>
+                        <th>دوره</th>
+                        <th>تاریخ ثبت</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cost in overhead_costs %}
+                    <tr>
+                        <td>
+                            <strong>{{ cost.name }}</strong>
+                        </td>
+                        <td>{{ "{:,.0f}".format(cost.amount) }} تومان</td>
+                        <td>
+                            <span class="badge bg-{{ 'primary' if cost.period == 'monthly' else 'success' }}">
+                                {{ 'ماهانه' if cost.period == 'monthly' else 'روزانه' }}
+                            </span>
+                        </td>
+                        <td>{{ cost.created_at|jalali_date }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        onclick="showCostDetails({{ cost.id }})" title="جزئیات">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                                <a class="btn btn-sm btn-outline-warning" href="{{ url_for('edit_overhead', cost_id=cost.id) }}" title="ویرایش">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('delete_overhead', cost_id=cost.id) }}" onsubmit="return confirm('حذف این هزینه؟')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-dollar-sign fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">هیچ هزینه جانبی ثبت نشده است</h4>
+            <p class="text-muted">برای شروع، هزینه جدیدی اضافه کنید</p>
+            <a href="{{ url_for('add_overhead') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>افزودن هزینه
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Cost Summary -->
+{% if overhead_costs %}
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-list fa-2x mb-2"></i>
+                <h5>{{ overhead_costs|length }}</h5>
+                <p class="mb-0">کل هزینه‌ها</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                <h5>{{ "{:,.0f}".format(overhead_costs|selectattr('period', 'equalto', 'monthly')|sum(attribute='amount')) }} تومان</h5>
+                <p class="mb-0">هزینه‌های ماهانه</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-day fa-2x mb-2"></i>
+                <h5>{{ "{:,.0f}".format(overhead_costs|selectattr('period', 'equalto', 'daily')|sum(attribute='amount')) }} تومان</h5>
+                <p class="mb-0">هزینه‌های روزانه</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-calculator fa-2x mb-2"></i>
+                <h5>{{ "{:,.0f}".format(overhead_costs|sum(attribute='amount')) }} تومان</h5>
+                <p class="mb-0">کل هزینه‌ها</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cost Distribution Chart -->
+    <!-- <div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                <!-- <i class="fas fa-chart-pie me-2"></i>توزیع هزینه‌ها -->
+                </h5>
+            </div>
+            <!-- <div class="card-body">
+                <canvas id="costDistributionChart" width="400" height="300"></canvas>
+            </div> -->
+        </div>
+    </div>
+
+<!--<div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>هزینه‌های ماهانه
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyCostsChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+-->
+<!-- Cost Details Modal -->
+<div class="modal fade" id="costDetailsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">جزئیات هزینه</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="costDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Create charts if costs exist
+{% if overhead_costs %}
+document.addEventListener('DOMContentLoaded', function() {
+    createCostDistributionChart();
+    createMonthlyCostsChart();
+});
+
+function createCostDistributionChart() {
+    const ctx = document.getElementById('costDistributionChart').getContext('2d');
+    
+    const costData = {};
+    {% for cost in overhead_costs %}
+        const costName = '{{ cost.name }}';
+        if (!costData[costName]) {
+            costData[costName] = 0;
+        }
+        costData[costName] += {{ cost.amount }};
+    {% endfor %}
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(costData),
+            datasets: [{
+                data: Object.values(costData),
+                backgroundColor: [
+                    'rgba(139, 69, 19, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(40, 167, 69, 0.8)',
+                    'rgba(23, 162, 184, 0.8)',
+                    'rgba(220, 53, 69, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createMonthlyCostsChart() {
+    const ctx = document.getElementById('monthlyCostsChart').getContext('2d');
+    
+    const monthlyCosts = {};
+    {% for cost in overhead_costs %}
+        {% if cost.period == 'monthly' %}
+        const costName = '{{ cost.name }}';
+        monthlyCosts[costName] = {{ cost.amount }};
+        {% endif %}
+    {% endfor %}
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(monthlyCosts),
+            datasets: [{
+                label: 'هزینه ماهانه (هزار تومان)',
+                data: Object.values(monthlyCosts).map(value => value / 1000),
+                backgroundColor: 'rgba(139, 69, 19, 0.8)',
+                borderColor: 'rgba(139, 69, 19, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'هزینه (هزار تومان)'
+                    }
+                }
+            }
+        }
+    });
+}
+{% endif %}
+
+async function showCostDetails(id) {
+    try {
+        const res = await fetch(`/overhead/${id}`);
+        const data = await res.json();
+        const html = `
+            <div class="mb-2"><strong>نام:</strong> ${data.name}</div>
+            <div class="mb-2"><strong>مبلغ:</strong> ${Number(data.amount).toLocaleString('fa-IR')} تومان</div>
+            <div class="mb-2"><strong>دوره:</strong> ${data.period_display}</div>
+            <div class="mb-2"><strong>تاریخ ایجاد:</strong> ${data.created_at}</div>
+        `;
+        document.getElementById('costDetailsContent').innerHTML = html;
+        const modal = new bootstrap.Modal(document.getElementById('costDetailsModal'));
+        modal.show();
+    } catch (e) {
+        alert('خطا در دریافت اطلاعات هزینه');
+    }
+}
+
+function editCost(id) {
+    window.location.href = `/overhead/${id}/edit`;
+}
+</script>
+{% endblock %}

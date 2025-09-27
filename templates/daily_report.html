@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+
+{% block title %}گزارش روزانه - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-calendar-day me-2"></i>گزارش روزانه
+            </h1>
+            <div>
+                <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-arrow-right me-2"></i>بازگشت به گزارشات
+                </a>
+                <button type="button" class="btn btn-success" onclick="window.print()">
+                    <i class="fas fa-print me-2"></i>چاپ گزارش
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Date Selector -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-8">
+                        <label for="date" class="form-label">انتخاب تاریخ (شمسی)</label>
+                        <input type="text" class="form-control" id="date" name="date" 
+                               value="{{ date|jalali_date }}" placeholder="YYYY-MM-DD">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-2"></i>نمایش گزارش
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+                <h4>{{ "{:,.0f}".format(total_sales) }} تومان</h4>
+                <p class="mb-0">کل فروش روز</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-shopping-cart fa-2x mb-2"></i>
+                <h4>{{ daily_orders|length }}</h4>
+                <p class="mb-0">تعداد سفارشات</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-coffee fa-2x mb-2"></i>
+                <h4>
+                    {% set total_items = 0 %}
+                    {% for order in daily_orders %}
+                        {% for item in order.items %}
+                            {% set total_items = total_items + item.quantity %}
+                        {% endfor %}
+                    {% endfor %}
+                    {{ total_items }}
+                </h4>
+                <p class="mb-0">کل محصولات فروخته شده</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-2x mb-2"></i>
+                <h4>
+                    {{ "{:,.0f}".format(estimated_profit) }} تومان
+                </h4>
+                <p class="mb-0">سود تخمینی</p>
+                <small class="text-muted">
+                    هزینه مواد: {{ "{:,.0f}".format(material_costs) }} تومان
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Orders Details -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>جزئیات سفارشات
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if daily_orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ساعت</th>
+                                <th>شماره فاکتور</th>
+                                <th>مشتری</th>
+                                <th>تعداد محصولات</th>
+                                <th>مبلغ کل</th>
+                                <th>وضعیت</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in daily_orders %}
+                            <tr>
+                                <td>{{ order.created_at|format_time }}</td>
+                                <td><strong>{{ order.invoice_number }}</strong></td>
+                                <td>
+                                    {% if order.customer_name %}
+                                        {{ order.customer_name }}
+                                    {% else %}
+                                        <span class="text-muted">بدون نام</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% set item_count = 0 %}
+                                    {% for item in order.items %}
+                                        {% set item_count = item_count + item.quantity %}
+                                    {% endfor %}
+                                    <span class="badge bg-primary">{{ item_count }}</span>
+                                </td>
+                                <td>{{ "{:,.0f}".format(order.total_amount) }} تومان</td>
+                                <td>
+                                    {% if order.status == 'preparing' %}
+                                        <span class="badge bg-warning">در حال آماده‌سازی</span>
+                                    {% elif order.status == 'delivered' %}
+                                        <span class="badge bg-success">تحویل داده شد</span>
+                                    {% elif order.status == 'cancelled' %}
+                                        <span class="badge bg-danger">لغو شده</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">هیچ سفارشی در این روز ثبت نشده است</h4>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-boxes me-2"></i>مصرف مواد اولیه
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if daily_consumption %}
+                <div class="list-group list-group-flush">
+                    {% for material_name, consumed, unit_cost in daily_consumption %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ material_name }}</span>
+                        <span class="badge bg-warning text-dark">
+                            {{ "{:,.0f}".format(consumed|abs) }} گرم
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    هیچ مصرفی در این روز ثبت نشده است
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Product Performance -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>عملکرد محصولات
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if daily_orders %}
+                    <!-- Product Performance List -->
+                    {% set product_summary = {} %}
+                    {% for order in daily_orders %}
+                        {% for item in order.items %}
+                            {% if item.product %}
+                                {% set product_name = item.product.name %}
+                                {% if product_name in product_summary %}
+                                    {% set _ = product_summary.update({product_name: product_summary[product_name] + item.quantity}) %}
+                                {% else %}
+                                    {% set _ = product_summary.update({product_name: item.quantity}) %}
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                    
+                    {% if product_summary %}
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">فهرست محصولات:</h6>
+                        <div class="list-group list-group-flush">
+                            {% for product_name, quantity in product_summary.items() %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="fw-medium">{{ product_name }}</span>
+                                <span class="badge bg-primary rounded-pill">{{ quantity }} عدد</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <hr>
+                    {% endif %}
+                    
+                    <div class="chart-container" style="position: relative; height: 200px;">
+                        <canvas id="productPerformanceChart"></canvas>
+                    </div>
+                {% else %}
+                <p class="text-muted text-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    هیچ داده‌ای برای نمایش وجود ندارد
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hourly Orders Chart -->
+{% if daily_orders %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-area me-2"></i>سفارشات ساعتی
+                </h5>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 400px;">
+                    <canvas id="hourlyOrdersChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Prepare data safely for JavaScript
+const productData = {
+    {% if daily_orders %}
+        {% set product_summary = {} %}
+        {% for order in daily_orders %}
+            {% for item in order.items %}
+                {% if item.product %}
+                    {% set product_name = item.product.name %}
+                    {% if product_name in product_summary %}
+                        {% set _ = product_summary.update({product_name: product_summary[product_name] + item.quantity}) %}
+                    {% else %}
+                        {% set _ = product_summary.update({product_name: item.quantity}) %}
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+        {% for product_name, quantity in product_summary.items() %}
+            "{{ product_name|replace('"', '\\"') }}": {{ quantity }},
+        {% endfor %}
+    {% endif %}
+};
+
+// Prepare hourly sales data as array
+const hourlyOrdersData = [
+    {% if daily_orders %}
+        {% for order in daily_orders %}
+            {
+                hour: {{ order.created_at.hour }},
+                amount: {{ order.total_amount }},
+                orderCount: 1,
+                time: '{{ order.created_at.strftime('%H:%M') }}'
+            },
+        {% endfor %}
+    {% endif %}
+];
+
+console.log('Hourly orders data:', hourlyOrdersData);
+
+// Create charts if orders exist
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Daily report loaded');
+    console.log('Orders count:', {{ daily_orders|length if daily_orders else 0 }});
+    
+    {% if daily_orders %}
+    try {
+        if (Object.keys(productData).length > 0) {
+            createProductPerformanceChart();
+        }
+        if (hourlyOrdersData.length > 0) {
+            createHourlyOrdersChart();
+        }
+    } catch (error) {
+        console.error('Error creating charts:', error);
+    }
+    {% else %}
+    console.log('No daily orders found');
+    {% endif %}
+});
+
+{% if daily_orders %}
+function createProductPerformanceChart() {
+    const ctx = document.getElementById('productPerformanceChart');
+    if (!ctx) {
+        console.error('Product chart canvas not found');
+        return;
+    }
+    
+    const chartCtx = ctx.getContext('2d');
+    
+    if (Object.keys(productData).length === 0) {
+        ctx.parentElement.innerHTML = '<p class="text-muted text-center">هیچ محصولی در این روز فروخته نشده است</p>';
+        return;
+    }
+    
+    console.log('Creating product chart with data:', productData);
+    
+    new Chart(chartCtx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(productData),
+            datasets: [{
+                data: Object.values(productData),
+                backgroundColor: [
+                    'rgba(139, 69, 19, 0.8)',
+                    'rgba(255, 215, 0, 0.8)',
+                    'rgba(255, 182, 193, 0.8)',
+                    'rgba(173, 216, 230, 0.8)',
+                    'rgba(144, 238, 144, 0.8)',
+                    'rgba(221, 160, 221, 0.8)',
+                    'rgba(255, 165, 0, 0.8)',
+                    'rgba(147, 112, 219, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        font: {
+                            size: 10
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ' + context.parsed + ' عدد';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function createHourlyOrdersChart() {
+    const ctx = document.getElementById('hourlyOrdersChart');
+    if (!ctx) {
+        console.error('Hourly chart canvas not found');
+        return;
+    }
+    
+    const chartCtx = ctx.getContext('2d');
+    
+    console.log('Creating hourly chart with data:', hourlyOrdersData);
+    
+    // Process hourly data
+    const salesByHour = {};
+    const ordersByHour = {};
+    
+    // Initialize all hours with 0
+    for (let i = 0; i < 24; i++) {
+        salesByHour[i] = 0;
+        ordersByHour[i] = 0;
+    }
+    
+    // Fill with actual data
+    hourlyOrdersData.forEach(order => {
+        const hour = order.hour;
+        salesByHour[hour] += order.amount;
+        ordersByHour[hour] += 1;
+    });
+    
+    console.log('Sales by hour:', salesByHour);
+    console.log('Orders by hour:', ordersByHour);
+    
+    // Create chart data
+    const labels = [];
+    const salesData = [];
+    const ordersData = [];
+    
+    for (let i = 0; i < 24; i++) {
+        labels.push(i + ':00');
+        salesData.push(salesByHour[i] / 1000); // Convert to thousands
+        ordersData.push(ordersByHour[i]);
+    }
+    
+    new Chart(chartCtx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'فروش (هزار تومان)',
+                data: salesData,
+                borderColor: 'rgba(139, 69, 19, 1)',
+                backgroundColor: 'rgba(139, 69, 19, 0.1)',
+                tension: 0.1,
+                fill: true,
+                yAxisID: 'y'
+            }, {
+                label: 'تعداد سفارشات',
+                data: ordersData,
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                tension: 0.1,
+                fill: false,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'ساعت'
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'فروش (هزار تومان)'
+                    },
+                    beginAtZero: true
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'تعداد سفارشات'
+                    },
+                    beginAtZero: true,
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            return 'ساعت ' + context[0].label;
+                        },
+                        label: function(context) {
+                            if (context.datasetIndex === 0) {
+                                return 'فروش: ' + context.parsed.y.toFixed(1) + ' هزار تومان';
+                            } else {
+                                return 'سفارشات: ' + context.parsed.y + ' عدد';
+                            }
+                        }
+                    }
+                },
+                legend: {
+                    position: 'top',
+                }
+            }
+        }
+    });
+}
+{% endif %}
+</script>
+{% endblock %}

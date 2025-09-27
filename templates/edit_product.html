@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}ویرایش محصول - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-edit me-2"></i>ویرایش محصول
+            </h1>
+            <a href="{{ url_for('products') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-2"></i>بازگشت به محصولات
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-coffee me-2"></i>اطلاعات محصول
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">نام محصول</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ product.name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="price" class="form-label">قیمت فروش (تومان)</label>
+                            <input type="number" class="form-control" id="price" name="price" 
+                                   value="{{ product.price }}" min="0" step="100" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="mb-3">
+                                <i class="fas fa-list me-2"></i>انتخاب مواد اولیه مورد نیاز
+                            </h6>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                برای هر ماده اولیه، مقدار مورد نیاز و واحد آن را مشخص کنید.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        {% for material in materials %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ material.name }}</h6>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <label class="form-label">مقدار</label>
+                                            <input type="number" class="form-control" 
+                                                   name="recipe_{{ material.id }}" 
+                                                   value="{% if material.id|string in current_recipe %}{{ (current_recipe[material.id|string]|convert_from_grams(material.display_unit))|round(2) }}{% endif %}"
+                                                   min="0" step="0.01">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">واحد</label>
+                                            <select class="form-select" name="unit_{{ material.id }}">
+                                                <option value="gram" {% if material.display_unit == 'gram' %}selected{% endif %}>گرم</option>
+                                                <option value="kg" {% if material.display_unit == 'kg' %}selected{% endif %}>کیلوگرم</option>
+                                                <option value="liter" {% if material.display_unit == 'liter' %}selected{% endif %}>لیتر</option>
+                                                <option value="ml" {% if material.display_unit == 'ml' %}selected{% endif %}>میلی‌لیتر</option>
+                                                <option value="piece" {% if material.display_unit == 'piece' %}selected{% endif %}>عدد</option>
+                                                <option value="pack" {% if material.display_unit == 'pack' %}selected{% endif %}>بسته</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">
+                                        موجودی: {{ material.display_stock|round(2) }} {{ material.display_unit }} | 
+                                        قیمت واحد: {{ material.display_unit_cost|round(0) }} تومان
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>ذخیره تغییرات
+                            </button>
+                            <a href="{{ url_for('products') }}" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-times me-2"></i>لغو
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Update calculations when unit changes
+function updateCalculations() {
+    // This function can be enhanced to show real-time cost calculations
+    console.log('Calculations updated');
+}
+
+// Add event listeners for unit changes
+document.addEventListener('DOMContentLoaded', function() {
+    const unitSelects = document.querySelectorAll('select[name^="unit_"]');
+    unitSelects.forEach(select => {
+        select.addEventListener('change', updateCalculations);
+    });
+});
+</script>
+{% endblock %}

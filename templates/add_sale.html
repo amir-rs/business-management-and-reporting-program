@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}ثبت فروش جدید - سیستم مدیریت کافه{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus me-2"></i>ثبت فروش جدید
+            </h1>
+            <a href="{{ url_for('sales') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-2"></i>بازگشت به لیست
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>اطلاعات فروش
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="product_id" class="form-label">
+                                <i class="fas fa-coffee me-1"></i>انتخاب محصول
+                            </label>
+                            <select class="form-select" id="product_id" name="product_id" required>
+                                <option value="">انتخاب کنید</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}" 
+                                        data-price="{{ product.price }}"
+                                        data-recipe="{{ product.recipe }}">
+                                    {{ product.name }} - {{ "{:,.0f}".format(product.price) }} تومان
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">محصول مورد نظر را انتخاب کنید</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="quantity" class="form-label">
+                                <i class="fas fa-hashtag me-1"></i>تعداد
+                            </label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" 
+                                   min="1" value="1" required>
+                            <div class="form-text">تعداد محصولات فروخته شده</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Product Information Display -->
+                    <div class="row" id="productInfo" style="display: none;">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-info-circle me-2"></i>اطلاعات محصول انتخاب شده
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <strong>قیمت واحد:</strong>
+                                        <span id="unitPrice">0 تومان</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>قیمت کل:</strong>
+                                        <span id="totalPrice">0 تومان</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>هزینه مواد:</strong>
+                                        <span id="materialCost">0 تومان</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>سود تخمینی:</strong>
+                                        <span id="estimatedProfit">0 تومان</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Material Consumption Preview -->
+                    <div class="row" id="materialConsumption" style="display: none;">
+                        <div class="col-12">
+                            <div class="alert alert-warning">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>مصرف مواد اولیه
+                                </h6>
+                                <p class="mb-2">این فروش باعث مصرف مواد زیر خواهد شد:</p>
+                                <div id="consumptionList">
+                                    <!-- Will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="button" class="btn btn-outline-secondary me-md-2" 
+                                        onclick="history.back()">
+                                    <i class="fas fa-times me-2"></i>انصراف
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>ثبت فروش
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Material data (in a real app, this would come from the backend)
+const materials = {
+    // This would be populated from the backend
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    const productSelect = document.getElementById('product_id');
+    const quantityInput = document.getElementById('quantity');
+    const productInfo = document.getElementById('productInfo');
+    const materialConsumption = document.getElementById('materialConsumption');
+    
+    function updateCalculations() {
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        const quantity = parseInt(quantityInput.value) || 0;
+        
+        if (selectedOption.value) {
+            const unitPrice = parseFloat(selectedOption.dataset.price);
+            const totalPrice = unitPrice * quantity;
+            
+            // Update display
+            document.getElementById('unitPrice').textContent = 
+                unitPrice.toLocaleString('fa-IR') + ' تومان';
+            document.getElementById('totalPrice').textContent = 
+                totalPrice.toLocaleString('fa-IR') + ' تومان';
+            
+            // Simulate material cost calculation (30% of selling price)
+            const materialCost = totalPrice * 0.3;
+            const estimatedProfit = totalPrice - materialCost;
+            
+            document.getElementById('materialCost').textContent = 
+                materialCost.toLocaleString('fa-IR') + ' تومان';
+            document.getElementById('estimatedProfit').textContent = 
+                estimatedProfit.toLocaleString('fa-IR') + ' تومان';
+            
+            // Show product info
+            productInfo.style.display = 'block';
+            
+            // Show material consumption (simulated)
+            showMaterialConsumption(selectedOption.dataset.recipe, quantity);
+            materialConsumption.style.display = 'block';
+        } else {
+            productInfo.style.display = 'none';
+            materialConsumption.style.display = 'none';
+        }
+    }
+    
+    function showMaterialConsumption(recipeJson, quantity) {
+        try {
+            const recipe = JSON.parse(recipeJson);
+            const consumptionList = document.getElementById('consumptionList');
+            
+            let html = '<div class="row">';
+            for (const [materialId, amount] of Object.entries(recipe)) {
+                const totalAmount = amount * quantity;
+                html += `
+                    <div class="col-md-6">
+                        <small>
+                            <i class="fas fa-box me-1"></i>
+                            ماده ${materialId}: ${totalAmount.toFixed(1)} گرم
+                        </small>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            
+            consumptionList.innerHTML = html;
+        } catch (e) {
+            document.getElementById('consumptionList').innerHTML = 
+                '<p class="text-muted">اطلاعات دستور تهیه در دسترس نیست</p>';
+        }
+    }
+    
+    // Add event listeners
+    productSelect.addEventListener('change', updateCalculations);
+    quantityInput.addEventListener('input', updateCalculations);
+    
+
+    
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const productId = productSelect.value;
+        const quantity = parseInt(quantityInput.value);
+        
+        if (!productId) {
+            e.preventDefault();
+            alert('لطفاً محصولی را انتخاب کنید');
+            return;
+        }
+        
+        if (quantity <= 0) {
+            e.preventDefault();
+            alert('تعداد باید بیشتر از صفر باشد');
+            return;
+        }
+        
+        if (quantity > 100) {
+            if (!confirm('تعداد فروش بیشتر از 100 است. آیا مطمئن هستید؟')) {
+                e.preventDefault();
+                return;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
